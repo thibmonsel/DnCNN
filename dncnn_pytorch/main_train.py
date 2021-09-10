@@ -48,7 +48,6 @@ parser.add_argument('--lr', default=1e-3, type=float, help='initial learning rat
 args = parser.parse_args()
 
 batch_size = args.batch_size
-cuda = torch.cuda.is_available()
 n_epoch = args.epoch
 sigma = args.sigma
 
@@ -56,6 +55,29 @@ save_dir = os.path.join('models', args.model+'_' + 'sigma' + str(sigma))
 
 if not os.path.exists(save_dir):
     os.mkdir(save_dir)
+
+
+def train(model, device, train_loader, loss_fn, optimizer): 
+    model.train()
+    
+    running_train_loss = 0
+    for step, data in enumerate(train_loader):
+        optimizer.zero_grad()
+        noisy_image, target_image = data[1].to(device), data[0].to(device)
+        residual_image = model(noisy_image)
+        clean_image = noisy_image - residual_image 
+        clean_data = clean_data.to(device)
+        loss = loss_fn(target_image, clean_image) / 2 
+        running_train_loss += loss.item()
+        loss.backward()
+        optimizer.step()
+        
+        if step % 10 == 0:
+            log('%4d %4d / %4d loss = %2.4f' % (epoch+1, step, xs.size(0)//batch_size, loss.item()/batch_size))
+    
+    log('epoch = %4d , loss = %4.4f' % (epoch+1, running_train_loss/len(train_loader)))
+     
+    return running_train_loss
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -65,38 +87,25 @@ if __name__ == '__main__':
     model = model.to(device)
     model.train()
 
-    criterion = sum_squared_error()
+    criterion = nn.MSELoss(reduction='sum')
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = MultiStepLR(optimizer, milestones=[30, 60, 90], gamma=0.2)  
+    
     for epoch in range(n_epoch):
-
+        
         xs = dg.datagenerator(data_dir=args.train_data)
         xs = xs.astype('float32')/255.0
         xs = torch.from_numpy(xs.transpose((0, 3, 1, 2)))  # tensor of the clean patches, NXCXHXW
         DDataset = DenoisingDataset(xs, sigma)
         DLoader = DataLoader(dataset=DDataset, num_workers=4, drop_last=True, batch_size=batch_size, shuffle=True)
-        epoch_loss = 0
-        start_time = time.time()
-
-        for n_count, batch_yx in enumerate(DLoader):
-                optimizer.zero_grad()
-                batch_x, batch_y = batch_yx[1].to(device), batch_yx[0].to(device)
-                out = model(batch_y)
-                cleaned = batch_x - out
-                loss = criterion(cleaned, batch_x)
-                epoch_loss += loss.item()
-                loss.backward()
-                optimizer.step()
-                if n_count % 10 == 0:
-                    print('%4d %4d / %4d loss = %2.4f' % (epoch+1, n_count, xs.size(0)//batch_size, loss.item()/batch_size))
         
+        loss = train(model, device, DLoader, criterion, optimizer)  
         scheduler.step(epoch)
-        elapsed_time = time.time() - start_time
-
-        log('epoch = %4d , loss = %4.4f , time = %4.2f s' % (epoch+1, epoch_loss/n_count, elapsed_time))
-        np.savetxt('train_result.txt', np.hstack((epoch+1, epoch_loss/n_count, elapsed_time)), fmt='%2.4f')
-        # torch.save(model.state_dict(), os.path.join(save_dir, 'model_%03d.pth' % (epoch+1)))
+      
         torch.save(model, os.path.join(save_dir, 'model_%03d.pth' % (epoch+1)))
+        
+    torch.save(model, os.path.join(save_dir, 'final_model.pth'))
+
 
 
 
