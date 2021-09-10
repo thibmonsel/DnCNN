@@ -29,6 +29,7 @@ import argparse
 import os, time
 import numpy as np
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
@@ -69,7 +70,6 @@ if __name__ == '__main__':
     scheduler = MultiStepLR(optimizer, milestones=[30, 60, 90], gamma=0.2)  
     for epoch in range(n_epoch):
 
-        scheduler.step(epoch)
         xs = dg.datagenerator(data_dir=args.train_data)
         xs = xs.astype('float32')/255.0
         xs = torch.from_numpy(xs.transpose((0, 3, 1, 2)))  # tensor of the clean patches, NXCXHXW
@@ -81,12 +81,16 @@ if __name__ == '__main__':
         for n_count, batch_yx in enumerate(DLoader):
                 optimizer.zero_grad()
                 batch_x, batch_y = batch_yx[1].to(device), batch_yx[0].to(device)
-                loss = criterion(model(batch_y), batch_x)
+                out = model(batch_y)
+                cleaned = batch_x - out
+                loss = criterion(cleaned, batch_x)
                 epoch_loss += loss.item()
                 loss.backward()
                 optimizer.step()
                 if n_count % 10 == 0:
                     print('%4d %4d / %4d loss = %2.4f' % (epoch+1, n_count, xs.size(0)//batch_size, loss.item()/batch_size))
+        
+        scheduler.step(epoch)
         elapsed_time = time.time() - start_time
 
         log('epoch = %4d , loss = %4.4f , time = %4.2f s' % (epoch+1, epoch_loss/n_count, elapsed_time))

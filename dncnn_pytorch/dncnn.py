@@ -19,15 +19,12 @@ class DnCNN(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        y = x
-        out = self.dncnn(x)
-        return y-out
+        return self.dncnn(x)
 
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 init.orthogonal_(m.weight)
-                print('init weight')
                 if m.bias is not None:
                     init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
