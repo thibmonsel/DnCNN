@@ -57,7 +57,7 @@ if not os.path.exists(save_dir):
     os.mkdir(save_dir)
 
 
-def train(model, device, train_loader, loss_fn, optimizer): 
+def train(model, device, train_loader, loss_fn, optimizer,epoch): 
     model.train()
     
     running_train_loss = 0
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         DDataset = DenoisingDataset(xs, sigma)
         DLoader = DataLoader(dataset=DDataset, num_workers=4, drop_last=True, batch_size=batch_size, shuffle=True)
         
-        loss = train(model, device, DLoader, criterion, optimizer)  
+        loss = train(model, device, DLoader, criterion, optimizer, epoch)  
         scheduler.step(epoch)
       
         torch.save(model, os.path.join(save_dir, 'model_%03d.pth' % (epoch+1)))
