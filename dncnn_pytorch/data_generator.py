@@ -23,6 +23,7 @@ import glob
 import cv2
 import numpy as np
 # from multiprocessing import Pool
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 import torch
 
@@ -86,6 +87,11 @@ def data_aug(img, mode=0):
 
 def gen_patches(file_name):
     # get multiscale patches from a single image
+    # image is rescaled with different scales (downscaled) and 
+    # we do an interpolation to deal with image quality (ie if scale = 0.8 then 180 * 0.8 = 144 pixel image )
+    # image patches are given from all of those scaled images (for 180*180 image and patches of size 40*40 with a 10 pixel stride we get 15*15 = 225 patches)
+    # and can do some data augmentation but here set to 1
+    # in  total we have 596 paches for 1 image : 4 scales -> 596/4 = 149 
     img = cv2.imread(file_name, 0)  # gray scale
     h, w = img.shape
     patches = []
@@ -93,7 +99,7 @@ def gen_patches(file_name):
         h_scaled, w_scaled = int(h*s), int(w*s)
         img_scaled = cv2.resize(img, (h_scaled, w_scaled), interpolation=cv2.INTER_CUBIC)
         # extract patches
-        for i in range(0, h_scaled-patch_size+1, stride):
+        for i in range(0, h_scaled-patch_size+1, stride): 
             for j in range(0, w_scaled-patch_size+1, stride):
                 x = img_scaled[i:i+patch_size, j:j+patch_size]
                 for k in range(0, aug_times):
@@ -105,7 +111,6 @@ def gen_patches(file_name):
 def datagenerator(data_dir='data/Train400', verbose=False):
     # generate clean patches from a dataset
     file_list = glob.glob(data_dir+'/*.png')  # get name list of all .png files
-    # initrialize
     data = []
     # generate patches
     for i in range(len(file_list)):
@@ -116,17 +121,29 @@ def datagenerator(data_dir='data/Train400', verbose=False):
             print(str(i+1) + '/' + str(len(file_list)) + ' is done ^_^')
     data = np.array(data, dtype='uint8')
     data = np.expand_dims(data, axis=3)
-    discard_n = len(data)-len(data)//batch_size*batch_size  # because of batch namalization
+    discard_n = len(data)-len(data)//batch_size*batch_size  # because of batch normalization
     data = np.delete(data, range(discard_n), axis=0)
-    print('^_^-training data finished-^_^')
+    # print('^_^-training data finished-^_^')
     return data
 
 
-if __name__ == '__main__': 
-
-    data = datagenerator(data_dir='data/Train400')
-
-
+# if __name__ == '__main__': 
+#     from torch.utils.data import DataLoader
+    
+#     sigma = 25
+#     data = datagenerator(data_dir='data/Train400')
+#     data = data.astype('float32')/255.0
+#     data = torch.from_numpy(data.transpose((0, 3, 1, 2)))  # tensor of the clean patches, N*C*H*W
+#     DDataset = DenoisingDataset(data, sigma)
+#     DLoader = DataLoader(dataset=DDataset, num_workers=2, drop_last=True, batch_size=batch_size, shuffle=True)
+    
+    # for step, data in enumerate(DLoader) :
+    #     noisy_image, target_image = torch.squeeze(data[0]),torch.squeeze(data[1])
+    #     plt.imshow(np.concatenate((noisy_image[0], target_image[0]), 0))
+    #     plt.title("Shape {} of images ".format(noisy_image[0].shape))
+    #     plt.show()
+        # time.sleep()
+        # plt.close()
 #    print('Shape of result = ' + str(res.shape))
 #    print('Saving data...')
 #    if not os.path.exists(save_dir):
