@@ -46,6 +46,7 @@ if __name__ == '__main__':
     args = parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = DnCNN()
+    
     model = torch.load(os.path.join(args.model_dir, 'model.pth'), map_location=torch.device('cpu') )
     model = model.to(device)
     model.eval()
@@ -54,7 +55,7 @@ if __name__ == '__main__':
         os.mkdir(args.result_dir)
 
     for set_cur in args.set_names:
-        psnrs,ssims = [], []
+        # psnrs,ssims = [], []
         if not os.path.exists(os.path.join(args.result_dir, set_cur)):
             os.mkdir(os.path.join(args.result_dir, set_cur))
        
