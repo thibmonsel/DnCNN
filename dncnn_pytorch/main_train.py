@@ -37,6 +37,7 @@ import data_generator as dg
 from data_generator import DenoisingDataset
 from dncnn import DnCNN
 from utils import sum_squared_error, log, findLastCheckpoint
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='PyTorch DnCNN')
 parser.add_argument('--model', default='DnCNN', type=str, help='choose a type of model')
@@ -57,16 +58,16 @@ if not os.path.exists(save_dir):
     os.mkdir(save_dir)
 
 
-def train(model, device, train_loader, loss_fn, optimizer,epoch): 
+def train(model, device, train_loader, loss_fn, optimizer, epoch): 
     model.train()
     
     running_train_loss = 0
     for step, data in enumerate(train_loader):
         optimizer.zero_grad()
-        noisy_image, target_image = data[1].to(device), data[0].to(device)
+        noisy_image, target_image = data[0].to(device), data[1].to(device)
         residual_image = model(noisy_image)
         clean_image = noisy_image - residual_image 
-        clean_data = clean_data.to(device)
+        clean_image = clean_image.to(device)
         loss = loss_fn(target_image, clean_image) / 2 
         running_train_loss += loss.item()
         loss.backward()
@@ -85,7 +86,6 @@ if __name__ == '__main__':
     print('===> Building model')
     model = DnCNN()
     model = model.to(device)
-    model.train()
 
     criterion = nn.MSELoss(reduction='sum')
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -95,14 +95,14 @@ if __name__ == '__main__':
         
         xs = dg.datagenerator(data_dir=args.train_data)
         xs = xs.astype('float32')/255.0
-        xs = torch.from_numpy(xs.transpose((0, 3, 1, 2)))  # tensor of the clean patches, NXCXHXW
+        xs = torch.from_numpy(xs.transpose((0, 3, 1, 2)))  # tensor of the clean patches, N*C*H*W
         DDataset = DenoisingDataset(xs, sigma)
-        DLoader = DataLoader(dataset=DDataset, num_workers=4, drop_last=True, batch_size=batch_size, shuffle=True)
+        DLoader = DataLoader(dataset=DDataset, num_workers=2, drop_last=True, batch_size=batch_size, shuffle=True)
         
         loss = train(model, device, DLoader, criterion, optimizer, epoch)  
         scheduler.step(epoch)
       
-        torch.save(model, os.path.join(save_dir, 'model_%03d.pth' % (epoch+1)))
+        torch.save(model, os.path.join(save_dir, 'model_%03d_training_mod.pth' % (epoch+1)))
         
     torch.save(model, os.path.join(save_dir, 'final_model.pth'))
 
