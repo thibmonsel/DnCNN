@@ -22,7 +22,6 @@
 import glob
 import cv2
 import numpy as np
-# from multiprocessing import Pool
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset
 import torch
@@ -89,10 +88,9 @@ def gen_patches(file_name):
     # get multiscale patches from a single image
     # image is rescaled with different scales (downscaled) and 
     # we do an interpolation to deal with image quality (ie if scale = 0.8 then 180 * 0.8 = 144 pixel image )
-    # image patches are given from all of those scaled images (for 180*180 image and patches of size 40*40 with a 10 pixel stride we get 15*15 = 225 patches)
-    # and can do some data augmentation but here set to 1
-    # in  total we have 596 paches for 1 image : 4 scales -> 596/4 = 149 
-    img = cv2.imread(file_name, 0)  # gray scale
+    # image patches are given from all of those scaled images (for 180*180 image and patches of size 40*40 with a 10 pixel stride we get 15*15 = 225 patch images)
+    # and can do some data augmentation but here set to 1. We have 596 image patches for 1 raw input.
+    img = cv2.imread(file_name, 0)  # grayscale
     h, w = img.shape
     patches = []
     for s in scales:

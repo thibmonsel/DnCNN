@@ -17,10 +17,18 @@ class sum_squared_error(_Loss):  # PyTorch 0.4.1
         super(sum_squared_error, self).__init__(size_average, reduce, reduction)
 
     def forward(self, input, target):
-        # return torch.sum(torch.pow(input-target,2), (0,1,2,3)).div_(2)
+        # return torch.sum(torch.pow(input-target,2), (0,1,2,3)).div_(2) equivalent to MSE.loss() / 2 
         return torch.nn.functional.mse_loss(input, target, size_average=None, reduce=None, reduction='sum').div_(2)
     
-    
+def divergence_loss(output, output_gauss, n, eps, sigma):
+    div = 2 * (sigma)**2 / eps / output.shape[0] * torch.sum(torch.matmul(n, output_gauss - output))
+    return div
+
+def divergence_loss2(output, output_gauss, n, eps, sigma):
+    img_size = torch.tensor(output.shape)
+    div = 2 * (sigma)**2 / eps / torch.prod(img_size).item() * torch.sum(torch.matmul(n, output_gauss - output))
+    return div
+
 def findLastCheckpoint(save_dir):
     file_list = glob.glob(os.path.join(save_dir, 'model_*.pth'))
     if file_list:
@@ -43,7 +51,7 @@ def save_result(result, path):
     if ext in ('.txt', '.dlm'):
         np.savetxt(path, result, fmt='%2.4f')
     else:
-        imsave(path, np.clip(result, 0, 1))
+        imsave(path, np.clip(result, 0, 1),cmap="Greys_r")
 
 
 def show(x, title=None, cbar=False, figsize=None):

@@ -7,10 +7,11 @@ dncnn_pytorch/figs
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+figs/
 # C extensions
 *.so
 
+.DS_*
 # Distribution / packaging
 bin/
 build/

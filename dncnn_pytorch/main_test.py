@@ -46,8 +46,9 @@ if __name__ == '__main__':
     args = parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = DnCNN()
-    
-    model = torch.load(os.path.join(args.model_dir, 'model.pth'), map_location=torch.device('cpu') )
+    model = torch.load( 'sure_model_015_training_mod.pth', map_location=torch.device('cpu') )
+
+    # model = torch.load(os.path.join(args.model_dir, 'model.pth'), map_location=torch.device('cpu') )
     model = model.to(device)
     model.eval()
 
@@ -88,8 +89,8 @@ if __name__ == '__main__':
                     name, ext = os.path.splitext(im)
                     # show(np.hstack((y, x_)))  
                     cleaned_img = y - x_
-                    save_result(cleaned_img, path=os.path.join(args.result_dir, set_cur, name+'_denoised_dncnn'+ext))  
-                    save_result(x_, path=os.path.join(args.result_dir, set_cur, name+'_dncnn'+ext))  
+                    save_result(cleaned_img, path=os.path.join(args.result_dir, set_cur, name+'_denoised_dncnn15'+ext))  
+                    save_result(x_, path=os.path.join(args.result_dir, set_cur, name+'_dncnn15'+ext))  
                     
                 
                 
