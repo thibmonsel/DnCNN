@@ -19,14 +19,9 @@ class sum_squared_error(_Loss):  # PyTorch 0.4.1
     def forward(self, input, target):
         # return torch.sum(torch.pow(input-target,2), (0,1,2,3)).div_(2) equivalent to MSE.loss() / 2 
         return torch.nn.functional.mse_loss(input, target, size_average=None, reduce=None, reduction='sum').div_(2)
-    
-def divergence_loss(output, output_gauss, n, eps, sigma):
-    div = 2 * (sigma)**2 / eps / output.shape[0] * torch.sum(torch.matmul(n, output_gauss - output))
-    return div
 
-def divergence_loss2(output, output_gauss, n, eps, sigma):
-    img_size = torch.tensor(output.shape)
-    div = 2 * (sigma)**2 / eps / torch.prod(img_size).item() * torch.sum(torch.matmul(n, output_gauss - output))
+def divergence_loss(output, output_gauss, n):
+    div = torch.sum(torch.matmul(n, output_gauss - output))
     return div
 
 def findLastCheckpoint(save_dir):
@@ -62,3 +57,13 @@ def show(x, title=None, cbar=False, figsize=None):
     if cbar:
         plt.colorbar()
     plt.show()
+    
+    
+def create_noisy_tensor_minibatch(data):
+    nb_elmts, img_size = data.shape[0], data.shape[1:]
+    n = torch.unsqueeze(torch.normal(0., 1, size = tuple(img_size)),dim=0)
+    for i in range(nb_elmts-1):
+        n = torch.cat((n, torch.unsqueeze(torch.normal(0., 1, size = tuple(img_size)),dim=0)), dim=0)
+    return n
+    
+    
